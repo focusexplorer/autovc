@@ -1,0 +1,9 @@
+.*
+!.gitignore
+*.ckpt
+*.pth
+*.pkl
+*.wav
+*.mp3
+__pycache__
+/tmp

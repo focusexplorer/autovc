@@ -19,7 +19,34 @@ import soundfile as sf
 from my_synthesis import build_model
 from my_synthesis import wavegen
 from my_plot import *
+import getopt,sys
+from inspect import currentframe, getframeinfo
 
+inputfile = ''
+outputfile = ''
+try:
+    help_tip='xxx.py -i <input wave> -r <target wav>'
+    opts, args = getopt.getopt(sys.argv[1:],"hi:r:")
+except getopt.GetoptError as err:
+    print(err)
+    print(help_tip,getframeinfo(currentframe()).lineno)
+    sys.exit(2)
+for opt, arg in opts:
+    if opt == '-h':
+        print(help_tip,getframeinfo(currentframe()).lineno)
+        sys.exit()
+    elif opt in ("-i"):
+        sourcefile = arg
+    elif opt in ("-r"):
+        referencefile = arg
+
+outputfile= sourcefile.split('.')[0] +'2'+ referencefile
+print ('源文件为：', sourcefile)
+print ('参考风格文件为：', referencefile)
+print ('输出文件为：', outputfile)
+# sys.exit(0)
+
+# %% 加载模型
 C = D_VECTOR(dim_input=80, dim_cell=768, dim_emb=256).eval().cuda()
 c_checkpoint = torch.load('3000000-BL.ckpt')
 new_state_dict = OrderedDict()
@@ -40,9 +67,6 @@ model = build_model().to(device)
 checkpoint = torch.load("checkpoint_step001000000_ema.pth")
 model.load_state_dict(checkpoint["state_dict"])
 
-sourcefile='s.wav'
-targetfile='t.wav'
-resultfile='r.wav'
 
 
 def pySTFT(x, fft_length=1024, hop_length=256):
@@ -97,7 +121,7 @@ def get_mel_and_emb(filename):
     return melsp0,e2
 
 uttr_org,emb_org=get_mel_and_emb(sourcefile)
-_,emb_trg=get_mel_and_emb(targetfile)
+_,emb_trg=get_mel_and_emb(referencefile)
 
 def my_pad_seq(x, base=32):
     len_out = int(base * ceil(float(x.size()[1])/base))
@@ -116,4 +140,5 @@ spect=x_identic_psnt
 
 #进行语音合成
 waveform = wavegen(model, c=spect[0][0])
-sf.write(resultfile, waveform, samplerate=16000)
+sf.write(outputfile, waveform, samplerate=16000)
+
